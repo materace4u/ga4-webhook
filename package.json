@@ -1,0 +1,12 @@
+{
+    "name": "ga4-webhook",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+      "start": "node webhook.js"
+    },
+    "dependencies": {
+      "node-fetch": "^3.3.2"
+    }
+  }
+  
