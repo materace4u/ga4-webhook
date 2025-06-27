@@ -4,10 +4,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   const data = req.body;
-  console.log('Webhook data:', data); // przyda się do debugowania w logach Vercel
+  console.log('Webhook data:', data); // przyda się do debugowania
 
   const payload = {
-    client_id: "555.666", // możesz wygenerować dynamicznie, jeśli chcesz
+    client_id: "555.666", // Można zamienić na dynamiczne ID klienta, jeśli posiadasz
     events: [
       {
         name: "purchase",
@@ -23,19 +23,33 @@ export default async function handler(req, res) {
           }))
         }
       }
-    ]
+    ],
+    user_properties: {
+      gclid: {
+        value: data.gclid || ""
+      }
+    }
   };
 
   try {
-    await fetch(`https://www.google-analytics.com/mp/collect?measurement_id=${process.env.GA4_MEASUREMENT_ID}&api_secret=${process.env.GA4_API_SECRET}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    const response = await fetch(
+      `https://www.google-analytics.com/mp/collect?measurement_id=${process.env.GA4_MEASUREMENT_ID}&api_secret=${process.env.GA4_API_SECRET}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }
+    );
 
-    res.status(204).end();
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('GA4 response error:', errorText);
+      return res.status(500).send({ error: 'GA4 response error', details: errorText });
+    }
+
+    res.status(204).end(); // Brak treści = OK
   } catch (error) {
     console.error('GA4 error:', error);
-    res.status(500).send({ error: 'GA4 error' });
+    res.status(500).send({ error: 'GA4 exception', details: error.message });
   }
 }
