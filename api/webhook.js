@@ -53,3 +53,4 @@ export default async function handler(req, res) {
     res.status(500).send({ error: 'GA4 exception', details: error.message });
   }
 }
+console.log("Webhook aktywny – test push do Vercel");
