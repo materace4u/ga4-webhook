@@ -6,15 +6,26 @@ export default async function handler(req, res) {
   const data = req.body;
   console.log('Webhook data:', data); // przyda się do debugowania
 
+  const statusName = (data.status?.name || "").toLowerCase();
+  const isPaid = data.paid !== undefined;
+  const isStatusQualified = statusName.includes("opłacono") || statusName.includes("realizacji") || statusName.includes("wysłano");
+
+  if (!isPaid && !isStatusQualified) {
+    console.log('Pominięto zamówienie – brak odpowiedniego statusu.');
+    return res.status(200).send({ info: 'Status nie kwalifikuje się jako konwersja.' });
+  }
+
+  const gclid = data.gclid || "555.666";
+
   const payload = {
-    client_id: "555.666", // Można zamienić na dynamiczne ID klienta, jeśli posiadasz
+    client_id: gclid,
     events: [
       {
         name: "purchase",
         params: {
           transaction_id: data.id || data.order_id,
           value: parseFloat(data.total_brutto || data.sum || 0),
-          currency: data.currency || "PLN",
+          currency: data.currency || data.currency_name || "PLN",
           items: (data.products || []).map(p => ({
             item_id: p.id || p.product_id,
             item_name: p.name,
@@ -26,7 +37,7 @@ export default async function handler(req, res) {
     ],
     user_properties: {
       gclid: {
-        value: data.gclid || ""
+        value: gclid
       }
     }
   };
@@ -53,4 +64,5 @@ export default async function handler(req, res) {
     res.status(500).send({ error: 'GA4 exception', details: error.message });
   }
 }
+
 console.log("Webhook aktywny – test push do Vercel");
